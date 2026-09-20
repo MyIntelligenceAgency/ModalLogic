@@ -16,6 +16,15 @@ instance (α : Type*) : Adjoin α (Multiset α) := ⟨Multiset.cons⟩
 
 instance (α : Type*) [DecidableEq α] : Adjoin α (Finset α) := ⟨insert⟩
 
+/-! ### Compat mathlib v4.33.1 - `⊆` a migre de `HasSubset` vers `LE`
+L'ordre des ensembles ne fournit plus d'instance `HasSubset` (`Set.instLE`,
+`Preorder.toLE` pour `Finset` portent desormais la notation). La classe
+ci-dessous etend `HasSubset α` : on restaure les deux instances retirees,
+construites sur les ordres `LE` existants (aucun changement semantique). -/
+instance (α : Type*) : HasSubset (Set α) := ⟨Set.Subset⟩
+
+instance (α : Type*) : HasSubset (Finset α) := ⟨fun s t => s ≤ t⟩
+
 class AdjunctiveSet (β : outParam Type*) (α : Type*) extends Membership β α, HasSubset α, EmptyCollection α, Adjoin β α where
   subset_iff {a b : α} : a ⊆ b ↔ ∀ x ∈ a, x ∈ b
   not_mem_empty (x : β) : ¬x ∈ (∅ : α)
