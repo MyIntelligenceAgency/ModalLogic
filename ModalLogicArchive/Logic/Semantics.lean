@@ -216,7 +216,12 @@ instance empty' (𝓜 : M) : 𝓜 ⊧* (∅ : Set F) := ⟨by simp⟩
     𝓜 ⊧* Set.range φ ↔ ∀ i, 𝓜 ⊧ φ i := by simp [modelsSet_iff]
 
 @[simp] lemma setOf_iff {P : F → Prop} {𝓜 : M} :
-    𝓜 ⊧* setOf P ↔ ∀ φ, P φ → 𝓜 ⊧ φ := by simp [modelsSet_iff]
+    𝓜 ⊧* setOf P ↔ ∀ φ, P φ → 𝓜 ⊧ φ := by
+  -- mathlib v4.33.1 : la reecriture de `φ ∈ setOf P` par simp ne se fait plus
+  -- (setOf deprecie) ; conversions definitionnelles explicites des deux cotes.
+  simp only [modelsSet_iff]
+  exact ⟨fun h φ hφ => h (show φ ∈ setOf P from hφ),
+         fun h φ hφ => h φ (show P φ from hφ)⟩
 
 end ModelsSet
 
