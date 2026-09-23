@@ -64,7 +64,7 @@ theorem modalCompanion_GrzPoint3 : ModalCompanion Propositional.LC Modal.GrzPoin
   . intro φ;
     apply Hilbert.LC.instKripkeCompleteFinite.complete;
   . rintro φ hφ F _ ⟨_, _⟩;
-    apply Modal.instSoundLogicNatFormulaSetFrameGrzPoint3SetOfIsFiniteGrzPoint3'.sound;
+    apply Modal.sound_finite_GrzPoint3'.sound;
     . grind;
     . apply Set.mem_setOf_eq.mpr;
       exact {};
