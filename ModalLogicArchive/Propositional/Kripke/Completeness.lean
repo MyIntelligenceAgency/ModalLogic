@@ -122,10 +122,16 @@ private lemma truthlemma.himp
 lemma truthlemma : t ⊧ φ ↔ φ ∈ t.1.1 := by
   induction φ generalizing t with
   | hatom => tauto;
-  | hfalsum => simp only [Semantics.Bot.models_falsum, not_mem₁_falsum];
+  | hfalsum =>
+    simp only [Semantics.Bot.models_falsum];
+    exact ⟨False.elim, fun h => not_mem₁_falsum (t := t) h⟩;
   | himp φ ψ ihp ihq => exact truthlemma.himp ihp ihq;
-  | hand φ ψ ihp ihq => simp [SaturatedConsistentTableau.iff_mem₁_and, *];
-  | hor φ ψ ihp ihq => simp [SaturatedConsistentTableau.iff_mem₁_or, *];
+  | hand φ ψ ihp ihq =>
+    simp [*];
+    exact (SaturatedConsistentTableau.iff_mem₁_and (t := t)).symm;
+  | hor φ ψ ihp ihq =>
+    simp [*];
+    exact (SaturatedConsistentTableau.iff_mem₁_or (t := t)).symm;
 
 lemma iff_valid_on_canonicalModel_deducible : (Kripke.canonicalModel 𝓢) ⊧ φ ↔ 𝓢 ⊢ φ := by
   constructor;
@@ -150,7 +156,7 @@ lemma iff_valid_on_canonicalModel_deducible : (Kripke.canonicalModel 𝓢) ⊧ �
     existsi t';
     apply truthlemma.not.mpr;
     apply iff_not_mem₁_mem₂.mpr;
-    simp_all;
+    exact (Tableau.subset_def.mp ht').2 (Set.mem_singleton φ);
   . intro h t;
     suffices φ ∈ t.1.1 by exact truthlemma.mpr this;
     exact mem₁_of_provable h;

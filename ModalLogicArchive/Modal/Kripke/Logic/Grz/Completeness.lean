@@ -204,8 +204,8 @@ lemma truthlemma {X : (miniCanonicalModel 𝓢 φ).World} (q_sub : ψ ∈ φ.sub
             left; push Not;
             use (ψ 🡒 □ψ);
             refine ⟨?_, ?_, ?_⟩;
-            . simp [Formula.subformulasGrz, Finset.LO.preboxItr];
-              grind;
+            . apply Finset.mem_preimage.mpr;
+              exact Finset.mem_union_right _ (Finset.mem_image.mpr ⟨ψ, Finset.mem_preimage.mpr q_sub, rfl⟩);
             . apply hY.2;
               simp;
             . by_contra hC;
@@ -229,7 +229,7 @@ lemma truthlemma {X : (miniCanonicalModel 𝓢 φ).World} (q_sub : ψ ∈ φ.sub
     . intro h Y RXY;
       apply ih (by grind) |>.mpr;
       have : ↑Y *⊢[𝓢] □ψ 🡒 ψ := Context.of! $ axiomT!;
-      have : ↑Y *⊢[𝓢] ψ := this ⨀ (membership_iff (by grind) |>.mp (RXY.1 ψ (by simp [Finset.LO.preboxItr]; grind) h));
+      have : ↑Y *⊢[𝓢] ψ := this ⨀ (membership_iff (by grind) |>.mp (RXY.1 ψ (by apply Finset.mem_preimage.mpr; exact Finset.mem_union_left _ q_sub) h));
       exact membership_iff (by grind) |>.mpr this;
 
 lemma complete_of_mem_miniCanonicalFrame
