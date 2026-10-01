@@ -22,6 +22,13 @@ variable {t : Tableau α} {φ ψ : Formula α}
 
 protected def Consistent (𝓢 : S) (t : Tableau α) := ∀ {Γ Δ : Finset (Formula α)}, (↑Γ ⊆ t.1) → (↑Δ ⊆ t.2) → 𝓢 ⊬ Γ.conj 🡒 Δ.disj
 
+/-- `Decidable` instance for `Tableau.Consistent` — closes the Lean 4.33.x migration gap.
+The propositional content is non-constructive (proof by contradiction), but the instance
+is sufficient for `split`/`by_cases` over the `if` in `lindenbaum_next`. Compatible with
+both 4.31.0 and 4.33.x toolchains (the fork uses 4.31.0; `formal_logic_lean` uses 4.33.1).
+Noncomputable because `Tableau.Consistent` is a Prop with no syntactic decidability. -/
+noncomputable instance instDecidableConsistent [Entailment.Cl 𝓢] : Decidable (Tableau.Consistent 𝓢 t) := Classical.dec _
+
 protected abbrev Inconsistent (𝓢 : S) (t : Tableau α) := ¬t.Consistent 𝓢
 
 protected structure Saturated (t : Tableau α) : Prop where
