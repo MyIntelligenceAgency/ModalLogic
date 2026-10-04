@@ -44,12 +44,15 @@ variable [Entailment.Cl 𝓢]
 lemma equality_def {t₁ t₂ : Tableau α} : t₁ = t₂ ↔ t₁.1 = t₂.1 ∧ t₁.2 = t₂.2 := by
   constructor;
   . intro h; cases h; simp;
-  . rintro ⟨h₁, h₂⟩; cases t₁; cases t₂; simp_all;
+  . rintro ⟨h₁, h₂⟩; cases t₁; cases t₂; simp_all; all_goals (first | rfl | exact Prod.ext rfl rfl);
 
 lemma disjoint_of_consistent (hCon : t.Consistent 𝓢) : t.Disjoint := by
   constructor;
   . by_contra hC;
-    obtain ⟨T, hT₁, hT₂, hT⟩ := by simpa [Disjoint] using hC;
+    obtain ⟨T, hT₁, hT₂, hT⟩ := by
+      first
+      | (have hC2 := hC; simp [Disjoint] at hC2; exact hC2)
+      | simpa [Disjoint] using hC
     obtain ⟨φ, hφ⟩ := Set.nonempty_def.mp $ Set.nonempty_iff_ne_empty.mpr hT;
     apply hCon (Γ := {φ}) (Δ := {φ})
       (by simp only [Finset.coe_singleton, Set.singleton_subset_iff]; apply hT₁; assumption)
@@ -225,12 +228,17 @@ variable {𝓢}
 @[simp] lemma eq_lindenbaum_indexed_zero [Encodable α] {t : Tableau α} : t[0] = t := by simp [lindenbaum_indexed]
 
 lemma consistent_lindenbaum_next [Entailment.Cl 𝓢] (consistent : t.Consistent 𝓢) (φ : Formula α) : (t.lindenbaum_next 𝓢 φ).Consistent 𝓢 := by
-  unfold lindenbaum_next;
-  split;
-  . assumption;
-  . rcases (either_expand_consistent_of_consistent consistent φ) with (h | h);
-    . contradiction;
-    . assumption;
+  by_cases hc : Tableau.Consistent 𝓢 (insert φ t.1, t.2)
+  . unfold lindenbaum_next; simp [hc];
+    first
+    | exact hc
+    | (intro hΓ hΔ; exact hc hΓ hΔ);
+  . unfold lindenbaum_next; simp [hc];
+    rcases (either_expand_consistent_of_consistent consistent φ) with (h | h);
+    . exact (hc h).elim;
+    . first
+      | exact h
+      | (intro hΓ hΔ; exact h hΓ hΔ);
 
 variable [Encodable α]
 
@@ -241,8 +249,9 @@ lemma consistent_lindenbaum_indexed_succ [Entailment.Cl 𝓢] {i : ℕ} : t[i].C
   . tauto;
 
 lemma either_mem_lindenbaum_indexed (t) (φ : Formula α) : φ ∈ t[(encode φ) + 1].1 ∨ φ ∈ t[(encode φ) + 1].2 := by
-  simp only [lindenbaum_indexed, encodek, lindenbaum_next];
-  split <;> tauto;
+  by_cases hc : Tableau.Consistent 𝓢 (insert φ t[encode φ].1, t[encode φ].2)
+  . simp [lindenbaum_indexed, encodek, lindenbaum_next, hc];
+  . simp [lindenbaum_indexed, encodek, lindenbaum_next, hc];
 
 lemma consistent_lindenbaum_indexed [Entailment.Cl 𝓢] (consistent : t.Consistent 𝓢) (i : ℕ) : t[i].Consistent 𝓢 := by
   induction i with
@@ -255,19 +264,23 @@ lemma subset₁_lindenbaum_indexed_of_lt (h : m ≤ n) : t[m].1 ⊆ t[n].1 := by
   induction h with
   | refl => simp;
   | step h ih =>
-    simp [lindenbaum_indexed, lindenbaum_next];
-    split;
-    . split <;> tauto;
-    . tauto;
+    rename_i n;
+    rcases hdec : (decode n : Option (Formula α)) with _ | φ;
+    . simp [lindenbaum_indexed, lindenbaum_next, hdec]; exact ih;
+    . by_cases hc : Tableau.Consistent 𝓢 (insert φ t[n].1, t[n].2);
+      . simp [lindenbaum_indexed, lindenbaum_next, hdec, hc]; exact ih.trans (Set.subset_insert _ _);
+      . simp [lindenbaum_indexed, lindenbaum_next, hdec, hc]; exact ih;
 
 lemma subset₂_lindenbaum_indexed_of_lt (h : m ≤ n) : t[m].2 ⊆ t[n].2 := by
   induction h with
   | refl => simp;
   | step h ih =>
-    simp [lindenbaum_indexed, lindenbaum_next];
-    split;
-    . split <;> tauto;
-    . tauto;
+    rename_i n;
+    rcases hdec : (decode n : Option (Formula α)) with _ | φ;
+    . simp [lindenbaum_indexed, lindenbaum_next, hdec]; exact ih;
+    . by_cases hc : Tableau.Consistent 𝓢 (insert φ t[n].1, t[n].2);
+      . simp [lindenbaum_indexed, lindenbaum_next, hdec, hc]; exact ih;
+      . simp [lindenbaum_indexed, lindenbaum_next, hdec, hc]; exact ih.trans (Set.subset_insert _ _);
 
 lemma exists_list_lindenbaum_index₁ {Γ : List _} (hΓ : ↑Γ.toFinset ⊆ ⋃ i, t[i].1): ∃ m, ∀ φ ∈ Γ, φ ∈ t[m].1 := by
   induction Γ with
@@ -377,10 +390,8 @@ lemma neither : ¬(φ ∈ t.1.1 ∧ φ ∈ t.1.2) := by
 lemma maximal_duality: t₁.1.1 = t₂.1.1 ↔ t₁.1.2 = t₂.1.2 :=
   Tableau.maximal_duality t₁.consistent t₂.consistent t₁.maximal t₂.maximal
 
-lemma equality_of₁ (e₁ : t₁.1.1 = t₂.1.1) : t₁ = t₂ := by
-  calc
-    t₁ = ⟨t₁.1, t₁.maximal, t₁.consistent⟩ := by rfl;
-    _  = ⟨t₂.1, t₂.maximal, t₂.consistent⟩ := by simp [Tableau.equality_def.mpr ⟨e₁, (maximal_duality.mp e₁)⟩];
+lemma equality_of₁ (e₁ : t₁.1.1 = t₂.1.1) : t₁ = t₂ :=
+  Subtype.ext $ Tableau.equality_def.mpr ⟨e₁, maximal_duality.mp e₁⟩
 
 lemma equality_of₂ (e₂ : t₁.1.2 = t₂.1.2) : t₁ = t₂ := equality_of₁ $ maximal_duality.mpr e₂
 
