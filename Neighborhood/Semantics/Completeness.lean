@@ -260,13 +260,9 @@ abbrev minimalRelativeMaximalCanonicalModel (L : Logic α) [L.Cl] [L.HasRE] [Non
   relativeBasicCanonicalModel L (fun _ _ => False)
 
 lemma minimalRelativeMaximalCanonicalModel.iff_minimal :
-  Ω ∈ (minimalRelativeMaximalCanonicalModel L).box X ↔ Ω ∈ (basicCanonicalModel L).box X := by
-  rw [relativeBasicCanonicalModel.iff_mem_box]
-  constructor
-  · rintro (h | ⟨_, h⟩)
-    · exact h
-    · exact h.elim
-  · exact Or.inl
+  Ω ∈ (minimalRelativeMaximalCanonicalModel L).box X ↔ Ω ∈ (basicCanonicalModel L).box X :=
+  (relativeBasicCanonicalModel.iff_mem_box (P := fun _ _ => False)).trans
+    ⟨fun h => h.elim id (fun ⟨_, h'⟩ => h'.elim), fun h => Or.inl h⟩
 
 /-- `relativeBasicCanonicalModel` with every non-proofset as an extra neighborhood. -/
 abbrev maximalRelativeMaximalCanonicalModel (L : Logic α) [L.Cl] [L.HasRE] [Nonempty (MaximalConsistentSet L)] :
