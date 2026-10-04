@@ -385,7 +385,9 @@ lemma iff_mem_B :
       apply minimalFiltration.iff_mem_B.mpr;
       use φ;
     . right;
-      suffices (∃ Y, 【M (□φ)】 = (minimalFiltration M T).B Y) ∧ W ∈ 【M (□φ)】 by simpa;
+      suffices (∃ Y, 【M (□φ)】 = (minimalFiltration M T).B Y) ∧ W ∈ 【M (□φ)】 by
+        rw [if_pos this.1];
+        exact this.2;
       constructor;
       . use (【M.truthset φ】);
         rw [Filtration.box_in_out hφ]
@@ -575,7 +577,12 @@ def quasiFilteringTransitiveFiltration (M : Model κ α) [M.IsMonotonic] [M.IsTr
               (∀ ξ, □ξ ∈ T → 【M (□ξ)】 ∈ Ys → W ∈ 【M (□ξ)】 → A ∈ 【M (□ξ)】) ↔
               (∀ ξ, □ξ ∈ T → ∀ Yi ∈ Ys, Yi = 【M (□ξ)】 → W ∈ 【M (□ξ)】 → A ∈ Yi) by
               simp [Ξ, Us];
-              tauto;
+              constructor;
+              . rintro h i hi;
+                rcases Finset.mem_filter.mp hi with ⟨hiYs, ψ, hψ, rfl, hW⟩;
+                exact h ψ hψ hiYs hW;
+              . rintro h a ha hYs hW;
+                exact h _ (Finset.mem_filter.mpr ⟨hYs, a, ha, rfl, hW⟩);
             constructor;
             . rintro h _ _ _ _ rfl;
               apply h <;> assumption;
@@ -588,7 +595,12 @@ def quasiFilteringTransitiveFiltration (M : Model κ α) [M.IsMonotonic] [M.IsTr
               (∀ ψ, □ψ ∈ T → 【M ψ】 ∈ Ys → W ∈ 【M (□ψ)】 → A ∈ 【M ψ】) ↔
               (∀ ψ, □ψ ∈ T → ∀ Yi ∈ Ys, Yi = 【M ψ】 → W ∈ 【M (□ψ)】 → A ∈ Yi) by
               simp [Ψ, Vs];
-              tauto;
+              constructor;
+              . rintro h i hi;
+                rcases Finset.mem_filter.mp hi with ⟨hiYs, ψ, hψ, rfl, hW⟩;
+                exact h ψ hψ hiYs hW;
+              . rintro h a ha hYs hW;
+                exact h _ (Finset.mem_filter.mpr ⟨hYs, a, ha, rfl, hW⟩);
             constructor;
             . rintro h _ _ _ _ rfl;
               apply h <;> assumption;
@@ -692,10 +704,18 @@ def quasiFilteringTransitiveFiltration (M : Model κ α) [M.IsMonotonic] [M.IsTr
           rw [eYVU, this.1, this.2];
           exact Finset.union_empty _;
         constructor;
-        . suffices ∀ Yi ∈ Ys, ∀ ψ, □ψ ∈ T → Yi = 【M ψ】 → ⟦w⟧ ∉ 【M (□ψ)】 by simpa [Vs];
+        . suffices ∀ Yi ∈ Ys, ∀ ψ, □ψ ∈ T → Yi = 【M ψ】 → ⟦w⟧ ∉ 【M (□ψ)】 by
+            simp only [Vs, Finset.eq_empty_iff_forall_notMem];
+            rintro Yi hi;
+            rcases Finset.mem_filter.mp hi with ⟨hYi, ψ, hψ, rfl, hw⟩;
+            exact this _ hYi ψ hψ rfl hw;
           rintro Yi hYi ψ hψ rfl hw;
           exact hΨ ⟨⟨ψ, hψ, ⟨_, hYi, rfl⟩, hw⟩⟩;
-        . suffices ∀ Yi ∈ Ys, ∀ ξ, □ξ ∈ T → Yi = 【M (□ξ)】 → ⟦w⟧ ∉ 【M (□ξ)】 by simpa [Us];
+        . suffices ∀ Yi ∈ Ys, ∀ ξ, □ξ ∈ T → Yi = 【M (□ξ)】 → ⟦w⟧ ∉ 【M (□ξ)】 by
+            simp only [Us, Finset.eq_empty_iff_forall_notMem];
+            rintro Yi hi;
+            rcases Finset.mem_filter.mp hi with ⟨hYi, ξ, hξ, rfl, hw⟩;
+            exact this _ hYi ξ hξ rfl hw;
           rintro Yi hYi ξ hξ rfl hw;
           exact hΞ ⟨⟨ξ, hξ, ⟨_, hYi, rfl⟩, hw⟩⟩;
     . intro h;

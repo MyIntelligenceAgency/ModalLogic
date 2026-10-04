@@ -52,6 +52,16 @@ instance {P : MaximalConsistentSet L → Set (Proofset L)} [L.HasAxiomN] :
   apply iff_of_true _ (Set.mem_univ Ω)
   exact Or.inl ⟨⊤, MaximalConsistentSet.mem_of_prove (by simp), by simp⟩
 
+/-- Direct instance on the abbrev head: under Lean v4.33, instance search no longer unfolds
+`intermediateRelativeMaximalCanonicalModel` (an abbrev of `relativeBasicCanonicalModel`) to match
+the general instance above. -/
+instance [L.HasAxiomN] :
+    (intermediateRelativeMaximalCanonicalModel L).ContainsUnit := by
+  constructor
+  ext Ω
+  apply iff_of_true _ (Set.mem_univ Ω)
+  exact Or.inl ⟨⊤, MaximalConsistentSet.mem_of_prove (by simp), by simp⟩
+
 end
 
 end
