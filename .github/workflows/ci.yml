@@ -62,6 +62,11 @@ jobs:
 
       - name: Build
         run: lake build
+      # defaultTargets (Fin74, Neighborhood) do not cover ModalLogicArchive;
+      # build the completeness layer explicitly so it cannot break silently
+      # (see jsboige/CoursIA#17522).
+      - name: Build ModalLogicArchive completeness layer
+        run: lake build ModalLogicArchive.Modal.Kripke.Logic.S5
 
       # The zoo only needs the environment already built above, so generate it
       # here rather than in a separate workflow with its own Lean build.
