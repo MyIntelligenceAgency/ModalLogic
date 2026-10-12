@@ -229,7 +229,7 @@ instance [Modal.K4McK ⪯ (Hilbert.Normal Ax)] : (canonicalFrame (Hilbert.Normal
     dsimp [canonicalFrame];
     trans (□⁻¹'x.1.1 ∪ Set.univ.image (λ φ => ◇φ 🡒 □φ));
     . apply Set.subset_union_left;
-    . simpa using hy;
+    . simpa using hy.1;
   by_cases hy : ∃ z, (canonicalFrame (Hilbert.Normal Ax)).Rel y z;
   . obtain ⟨z, Ryz⟩ := hy;
     use z;

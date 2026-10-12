@@ -112,16 +112,19 @@ lemma next_consistent (H_consis : H.Consistent 𝓢) : (next 𝓢 ψ H).Consiste
     grind;
 
 lemma next_monotone₁ : H.1 ⊆ (next 𝓢 ψ H).1 := by
-  simp [next, insert₁, insert₂];
-  split <;> grind;
+  by_cases h : Consistent 𝓢 (H.insert₁ ψ);
+  . rw [next, if_pos h]; simp [insert₁];
+  . rw [next, if_neg h]; simp [insert₂];
 
 lemma next_monotone₂ : H.2 ⊆ (next 𝓢 ψ H).2 := by
-  simp [next, insert₁, insert₂];
-  split <;> grind;
+  by_cases h : Consistent 𝓢 (H.insert₁ ψ);
+  . rw [next, if_pos h]; simp [insert₁];
+  . rw [next, if_neg h]; simp [insert₂];
 
 lemma next_either_mem (ψ) : ψ ∈ (next 𝓢 ψ H).1 ∨ ψ ∈ (next 𝓢 ψ H).2 := by
-  simp [next, insert₁, insert₂];
-  split <;> grind;
+  by_cases h : Consistent 𝓢 (H.insert₁ ψ);
+  . rw [next, if_pos h]; simp [insert₁];
+  . rw [next, if_neg h]; simp [insert₂];
 
 noncomputable def enum (𝓢 : S) (H : HintikkaPair φ) : List (SubformulaOf φ) → HintikkaPair φ
   | [] => H
@@ -366,7 +369,7 @@ open Formula.FMT in
 lemma HintikkaModel.truthlemma {H : HintikkaModel 𝓢 φ} (hsub : ψ ∈ φ.subformulas) : ⟨ψ, hsub⟩ ∈ H.1.1 ↔ H ⊩ ψ := by
   induction ψ generalizing H with
   | hatom a => tauto;
-  | hfalsum => simp;
+  | hfalsum => simp; exact ConsistentSaturatedHintikkaPair.no_bot hsub;
   | hand => apply Iff.trans $ ConsistentSaturatedHintikkaPair.iff_mem_and hsub; grind;
   | hor => apply Iff.trans $ ConsistentSaturatedHintikkaPair.iff_mem_or hsub; grind;
   | himp χ ξ ihχ ihξ =>

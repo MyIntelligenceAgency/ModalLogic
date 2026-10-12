@@ -31,7 +31,7 @@ instance : HasSubset (Tableau α) := ⟨λ t₁ t₂ => t₁.1 ⊆ t₂.1 ∧ t�
 @[simp] lemma equality_def {t₁ t₂ : Tableau α} : t₁ = t₂ ↔ t₁.1 = t₂.1 ∧ t₁.2 = t₂.2 := by
   constructor;
   . intro h; cases h; simp;
-  . rintro ⟨h₁, h₂⟩; cases t₁; cases t₂; simp_all;
+  . rintro ⟨h₁, h₂⟩; exact Prod.ext h₁ h₂;
 
 lemma not_mem₂ (hCon : t.Consistent 𝓢) {Γ : Finset (Formula α)} (hΓ : ∀ φ ∈ Γ, φ ∈ t.1) (h : 𝓢 ⊢ Γ.conj 🡒 ψ) : ψ ∉ t.2 := by
   by_contra hC;
@@ -214,13 +214,36 @@ local notation:max t"∞" => lindenbaum_maximal 𝓢 t
 
 variable {𝓢}
 
+/-
+  `Tableau.Consistent` unfolds to a statement that starts with implicit binders
+  (`∀ {Γ Δ}`). Since Lean 4.33 a hypothesis of that type has its implicits instantiated
+  as soon as it is elaborated without an expected type, so `split` can no longer rewrite
+  the `if` of `lindenbaum_next`. The equation lemmas below carry the case split once and
+  for all; `@h` prevents the instantiation of the implicits.
+-/
+lemma lindenbaum_next_of_consistent {φ : Formula α} {t : Tableau α}
+    (h : Tableau.Consistent 𝓢 (insert φ t.1, t.2)) :
+    t.lindenbaum_next 𝓢 φ = (insert φ t.1, t.2) := by
+  unfold lindenbaum_next; exact if_pos @h
+
+lemma lindenbaum_next_of_not_consistent {φ : Formula α} {t : Tableau α}
+    (h : ¬Tableau.Consistent 𝓢 (insert φ t.1, t.2)) :
+    t.lindenbaum_next 𝓢 φ = (t.1, insert φ t.2) := by
+  unfold lindenbaum_next; exact if_neg h
+
+lemma lindenbaum_next_cases (φ : Formula α) (t : Tableau α) :
+    t.lindenbaum_next 𝓢 φ = (insert φ t.1, t.2) ∨ t.lindenbaum_next 𝓢 φ = (t.1, insert φ t.2) := by
+  by_cases h : Tableau.Consistent 𝓢 (insert φ t.1, t.2);
+  . exact Or.inl (lindenbaum_next_of_consistent @h);
+  . exact Or.inr (lindenbaum_next_of_not_consistent h);
+
 lemma next_parametericConsistent [Entailment.Int 𝓢] (consistent : t.Consistent 𝓢) (φ : Formula α) : (t.lindenbaum_next 𝓢 φ).Consistent 𝓢 := by
-  dsimp [lindenbaum_next];
-  split;
-  . simpa;
-  . rcases (consistent_either consistent φ) with (h | h);
+  by_cases hc : Tableau.Consistent 𝓢 (insert φ t.1, t.2);
+  . rw [lindenbaum_next_of_consistent @hc]; exact hc;
+  . rw [lindenbaum_next_of_not_consistent hc];
+    rcases (consistent_either consistent φ) with (h | h);
     . contradiction;
-    . assumption;
+    . exact h;
 
 variable [Encodable α]
 
@@ -233,10 +256,10 @@ lemma lindenbaum_next_indexed_parametricConsistent_succ [Entailment.Int 𝓢] {i
   . tauto;
 
 lemma mem_lindenbaum_next_indexed (t) (φ : Formula α) : φ ∈ t[(encode φ) + 1].1 ∨ φ ∈ t[(encode φ) + 1].2 := by
-  simp only [lindenbaum_next_indexed, encodek, lindenbaum_next];
-  split;
-  . left; tauto;
-  . right; tauto;
+  have e : t[(encode φ) + 1] = t[encode φ].lindenbaum_next 𝓢 φ := by
+    simp only [lindenbaum_next_indexed, encodek];
+  rw [e];
+  rcases lindenbaum_next_cases (𝓢 := 𝓢) φ t[encode φ] with e' | e' <;> rw [e'] <;> simp;
 
 lemma lindenbaum_next_indexed_parametricConsistent [Entailment.Int 𝓢] (consistent : t.Consistent 𝓢) (i : ℕ) : t[i].Consistent 𝓢 := by
   induction i with
@@ -248,20 +271,28 @@ variable {m n : ℕ}
 lemma lindenbaum_next_indexed_subset₁_of_lt (h : m ≤ n) : t[m].1 ⊆ t[n].1 := by
   induction h with
   | refl => simp;
-  | step h ih =>
-    simp [lindenbaum_next_indexed, lindenbaum_next];
-    split;
-    . split <;> tauto;
-    . tauto;
+  | @step k h ih =>
+    refine ih.trans ?_;
+    rcases hd : (decode k : Option (Formula α)) with _ | φ;
+    . have e : t[k + 1] = t[k] := by simp [lindenbaum_next_indexed, hd];
+      rw [e];
+    . have e : t[k + 1] = t[k].lindenbaum_next 𝓢 φ := by simp [lindenbaum_next_indexed, hd];
+      rw [e];
+      rcases lindenbaum_next_cases (𝓢 := 𝓢) φ t[k] with e' | e' <;> rw [e'];
+      all_goals first | exact subset_refl _ | exact Set.subset_insert _ _;
 
 lemma lindenbaum_next_indexed_subset₂_of_lt (h : m ≤ n) : t[m].2 ⊆ t[n].2 := by
   induction h with
   | refl => simp;
-  | step h ih =>
-    simp [lindenbaum_next_indexed, lindenbaum_next];
-    split;
-    . split <;> tauto;
-    . tauto;
+  | @step k h ih =>
+    refine ih.trans ?_;
+    rcases hd : (decode k : Option (Formula α)) with _ | φ;
+    . have e : t[k + 1] = t[k] := by simp [lindenbaum_next_indexed, hd];
+      rw [e];
+    . have e : t[k + 1] = t[k].lindenbaum_next 𝓢 φ := by simp [lindenbaum_next_indexed, hd];
+      rw [e];
+      rcases lindenbaum_next_cases (𝓢 := 𝓢) φ t[k] with e' | e' <;> rw [e'];
+      all_goals first | exact subset_refl _ | exact Set.subset_insert _ _;
 
 lemma exists_list_lindenbaum_index₁ {Γ : List _} (hΓ : ↑Γ.toFinset ⊆ ⋃ i, t[i].1): ∃ m, ∀ φ ∈ Γ, φ ∈ t[m].1 := by
   induction Γ with
@@ -368,11 +399,8 @@ lemma iff_not_mem₂_mem₁ : φ ∉ t.1.2 ↔ φ ∈ t.1.1 := Tableau.not_mem�
 
 lemma saturated_duality: t₁.1.1 = t₂.1.1 ↔ t₁.1.2 = t₂.1.2 := Tableau.saturated_duality t₁.consistent t₂.consistent t₁.saturated t₂.saturated
 
-lemma equality_of₁ (e₁ : t₁.1.1 = t₂.1.1) : t₁ = t₂ := by
-  have e := Tableau.equality_def.mpr ⟨e₁, (saturated_duality.mp e₁)⟩;
-  calc
-    t₁ = ⟨t₁.1, t₁.saturated, t₁.consistent⟩ := by rfl;
-    _  = ⟨t₂.1, t₂.saturated, t₂.consistent⟩ := by simp [e];
+lemma equality_of₁ (e₁ : t₁.1.1 = t₂.1.1) : t₁ = t₂ :=
+  Subtype.ext (Tableau.equality_def.mpr ⟨e₁, (saturated_duality.mp e₁)⟩)
 
 lemma equality_of₂ (e₂ : t₁.1.2 = t₂.1.2) : t₁ = t₂ := equality_of₁ $ saturated_duality.mpr e₂
 

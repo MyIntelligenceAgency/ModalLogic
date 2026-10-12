@@ -100,8 +100,8 @@ section
 
 lemma eq_root_or_eq_original (x : F.extendRoot 1) : x = (F.extendRoot 1).root ∨ ∃ x₀ : F, x = x₀ := by
   rcases eq_extend_or_eq_original x with (⟨i, hi, rfl⟩ | ⟨x₀, rfl⟩);
-  . left; simp [Frame.root, default, extend];
-  . simp;
+  . left; simp [Frame.root, default, extend]; exact congrArg Sum.inl (Fin.eq_zero i);
+  . right; exact ⟨x₀, rfl⟩;
 
 lemma eq_original_of_rel_extendRoot_root₁ [F.IsIrreflexive] (x : F.extendRoot 1) (h : (extendRoot F 1).root ≺ x)
   : ∃ x₀ : F, x = x₀ := by
